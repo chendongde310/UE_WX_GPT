@@ -154,6 +154,14 @@ class DB {
     return 0;
   }
 
+  public getUsersStringWithLevelGreaterThanTenSortedByLevelDescending(): string {
+    const users = DB.data.filter((user) => user.level > 10).sort((a,b) => b.level - a.level);
+    const names = users.map((user) => user.username);
+    return names.join(', ');
+  }
+
+
+
   // Inside DB class
 
   /**

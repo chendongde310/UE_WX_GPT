@@ -224,6 +224,7 @@ export class ChatGPTBot {
     //文字信息
     if (messageType == MessageType.Text) {
       if (text.includes("不是大佬")
+      || text.includes("谁是大佬 ")
         || text.includes("学习 ")
         || text==="常用命令"
         || text.includes("收到红包，请在手机上查看")
@@ -265,6 +266,9 @@ export class ChatGPTBot {
       } else {
         resultMessage = `经过您的历史发言分析：您离成为群里大佬已经不远了！`;
       }
+    }else  if (text.includes("谁是大佬")) {
+      
+      resultMessage =`本群大佬有 ${DBUtils.getUsersStringWithLevelGreaterThanTenSortedByLevelDescending()}` ; 
     } else if (text.startsWith("学习 ")) { //有空格
       const keyAndValue = text.substring(3);
       const key = keyAndValue.substring(0, keyAndValue.indexOf(" "));
@@ -287,7 +291,7 @@ r.MotionBlurQuality 4 运动模糊质量
 r.DOF.Kernel.MaxForegroundRadius 0.005 前景虚化半径 
 r.DOF.Kernel.MaxBackgroundRadius 0.005 背景虚化半径 
 r.DOF.Recombine.Quality 0 控制柔和程度
-[以上指令感谢@${'轩'}提供]`
+[以上指令感谢@${'轩'} 提供]`
     }else if (text.includes("收到红包，请在手机上查看")) { //有空格
       
       resultMessage = `@${"小陈"} @${"小陈"} @${"小陈"} 老大快出来抢红包啦！！！再晚点就被这群臭小子抢完了！！ `;
@@ -346,20 +350,22 @@ r.DOF.Recombine.Quality 0 控制柔和程度
     if (this.isNonsense(talker, messageType, rawText)) {
       return;
     }
-    if (messageType == MessageType.Audio) {
-      // 保存语音文件
-      const fileBox = await message.toFileBox();
-      let fileName = "./public/" + fileBox.name;
-      await fileBox.toFile(fileName, true).catch((e) => {
-        console.log("保存语音失败", e);
-        return;
-      });
-      // Whisper
-      whisper("", fileName).then((text) => {
-        message.say(text);
-      })
-      return;
-    }
+
+    //取消语音识别
+    // if (messageType == MessageType.Audio) {
+    //   // 保存语音文件
+    //   const fileBox = await message.toFileBox();
+    //   let fileName = "./public/" + fileBox.name;
+    //   await fileBox.toFile(fileName, true).catch((e) => {
+    //     console.log("保存语音失败", e);
+    //     return;
+    //   });
+    //   // Whisper
+    //   whisper("", fileName).then((text) => {
+    //     message.say(text);
+    //   })
+    //   return;
+    // }
     if (rawText.startsWith("/cmd ")) {
       console.log(`🤖 Command: ${rawText}`)
       const cmdContent = rawText.slice(5) // 「/cmd 」一共5个字符(注意空格)
