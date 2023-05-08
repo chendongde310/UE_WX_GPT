@@ -2,8 +2,11 @@ import { ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } fr
 import { User } from "./interface";
 import { isTokenOverLimit } from "./utils.js";
 
-import AV from 'leancloud-storage';
+
 import { users } from "wechaty";
+
+
+import AV from 'leancloud-storage';
 const { Query, User } = AV;
 
 
@@ -14,13 +17,20 @@ const { Query, User } = AV;
 
 class DB {
   private static data: User[] = [];
-  private  static wikis: Wiki[] = [];
+  private static wikis: Wiki[] = [];
 
   constructor() {
-    const query = new AV.Query("Wikis"); 
+    //加载LC数据库
+    AV.init({
+      appId: "njhD5QtcCps1XH3ZZwu9wg04-gzGzoHsz",
+      appKey: "Q40JsKQ2zsPQBDHdfSpQyAQj",
+      serverURL: "https://njhd5qtc.lc-cn-n1-shared.com",
+    });
+
+    const query = new AV.Query("Wikis");
     query.limit(1000)
     query.find().then((datas) => {
- 
+
       datas.forEach((item: any) => {
         DB.wikis.push({
           user: item.get("user"),
@@ -32,10 +42,10 @@ class DB {
 
 
     //
-    const user_query = new AV.Query("DBUser"); 
+    const user_query = new AV.Query("DBUser");
     user_query.limit(1000)
     user_query.find().then((datas) => {
- 
+
       datas.forEach((item: any) => {
         DB.data.push({
           username: item.get("username"),
@@ -50,9 +60,9 @@ class DB {
       });
     });
 
-    
+
   }
-  
+
 
 
   /**
@@ -77,24 +87,24 @@ class DB {
     };
     DB.data.push(newUser);
 
-      //添加到服务器
-        // 声明 class
-        const Todo = AV.Object.extend("DBUser");
-        // 构建对象
-        const todo = new Todo();
-        // 为属性赋值
-        todo.set("username", username); 
-        todo.set("value", 0);
-        // 将对象保存到云端
-        todo.save().then(
-          (todo) => {
-            // 成功保存之后，执行其他逻辑
-            console.log(`保存成功。objectId：${todo.id}`);
-          },
-          (error) => {
-            // 异常处理
-          }
-        );
+    //添加到服务器
+    // 声明 class
+    const Todo = AV.Object.extend("DBUser");
+    // 构建对象
+    const todo = new Todo();
+    // 为属性赋值
+    todo.set("username", username);
+    todo.set("value", 0);
+    // 将对象保存到云端
+    todo.save().then(
+      (todo) => {
+        // 成功保存之后，执行其他逻辑
+        console.log(`保存成功。objectId：${todo.id}`);
+      },
+      (error) => {
+        // 异常处理
+      }
+    );
 
 
 
@@ -222,7 +232,7 @@ class DB {
   }
 
   public getUsersStringWithLevelGreaterThanTenSortedByLevelDescending(): string {
-    const users = DB.data.filter((user) => user.level > 10).sort((a,b) => b.level - a.level);
+    const users = DB.data.filter((user) => user.level > 10).sort((a, b) => b.level - a.level);
     const names = users.map((user) => user.username);
     return names.join(', ');
   }
@@ -236,7 +246,7 @@ class DB {
    * @param key
    * @param knowledge
    */
-  public addWiki(username: string,key: string, value: string): void {
+  public addWiki(username: string, key: string, value: string): void {
 
     const newWiki: Wiki = {
       user: username,
@@ -244,10 +254,10 @@ class DB {
       value: value
     };
     DB.wikis.push(newWiki);
-     
+
 
     //添加到服务器
-        // 声明 class
+    // 声明 class
     const Todo = AV.Object.extend("Wikis");
     // 构建对象
     const todo = new Todo();
@@ -277,7 +287,7 @@ class DB {
     const wikiStringArray = wikis.map(wiki => `[${wiki.key}]\n${wiki.value}\n[--以上内容由 @${wiki.user}  佬贡献]`);
     return wikiStringArray.join('\n\n');
   }
-  
+
 
   private getWikisByKey(key: string): Wiki[] {
     return DB.wikis.filter(wiki => wiki.key === key);
@@ -286,10 +296,10 @@ class DB {
 
   public getAllWikisKeys(): string {
     const wikis = DBUtils.getWikisByKey('');
-    const keys = wikis.map((wiki, index) => `${index+1}.${wiki.key}`);
-    return "目前已录入以下知识库\n\n"+keys.join('\n');
+    const keys = wikis.map((wiki, index) => `${index + 1}.${wiki.key}`);
+    return "目前已录入以下知识库\n\n" + keys.join('\n');
   }
-  
+
 
   public getWikisSizeForKey(key: string): number {
     return this.getWikisByKey(key).length;

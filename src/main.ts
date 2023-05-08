@@ -4,8 +4,7 @@ import { ChatGPTBot } from "./bot.js";
 import {config} from "./config.js";
 const chatGPTBot = new ChatGPTBot();
 
-import AV from 'leancloud-storage';
-const { Query, User } = AV;
+ 
 
 
 const bot =  WechatyBuilder.build({
@@ -55,12 +54,7 @@ async function main() {
   }
 
 
-  //加载LC数据库
-  AV.init({
-    appId: "njhD5QtcCps1XH3ZZwu9wg04-gzGzoHsz",
-    appKey: "Q40JsKQ2zsPQBDHdfSpQyAQj",
-    serverURL: "https://njhd5qtc.lc-cn-n1-shared.com",
-  });
+  
 
  
 
