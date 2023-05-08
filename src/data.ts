@@ -2,6 +2,9 @@ import { ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } fr
 import { User } from "./interface";
 import { isTokenOverLimit } from "./utils.js";
 
+import AV from 'leancloud-storage';
+import { users } from "wechaty";
+const { Query, User } = AV;
 
 
 
@@ -11,7 +14,46 @@ import { isTokenOverLimit } from "./utils.js";
 
 class DB {
   private static data: User[] = [];
-  private static knowledge: Map<string, string> = new Map<string, string>();
+  private  static wikis: Wiki[] = [];
+
+  constructor() {
+    const query = new AV.Query("Wikis"); 
+    query.limit(1000)
+    query.find().then((datas) => {
+ 
+      datas.forEach((item: any) => {
+        DB.wikis.push({
+          user: item.get("user"),
+          key: item.get("key"),
+          value: item.get("value")
+        });
+      });
+    });
+
+
+    //
+    const user_query = new AV.Query("DBUser"); 
+    user_query.limit(1000)
+    user_query.find().then((datas) => {
+ 
+      datas.forEach((item: any) => {
+        DB.data.push({
+          username: item.get("username"),
+          chatMessage: [
+            {
+              role: ChatCompletionRequestMessageRoleEnum.System,
+              content: "ChatGPT你叫艾莎,是最优秀的UE5小助手,可以根据[https://docs.unrealengine.com/5.1/zh-CN/]官方文档回答我相关问题！"
+            }
+          ],
+          level: item.get("level")
+        });
+      });
+    });
+
+    
+  }
+  
+
 
   /**
    * 添加一个用户, 如果用户已存在则返回已存在的用户
@@ -34,6 +76,31 @@ class DB {
       level: 0
     };
     DB.data.push(newUser);
+
+      //添加到服务器
+        // 声明 class
+        const Todo = AV.Object.extend("DBUser");
+        // 构建对象
+        const todo = new Todo();
+        // 为属性赋值
+        todo.set("username", username); 
+        todo.set("value", 0);
+        // 将对象保存到云端
+        todo.save().then(
+          (todo) => {
+            // 成功保存之后，执行其他逻辑
+            console.log(`保存成功。objectId：${todo.id}`);
+          },
+          (error) => {
+            // 异常处理
+          }
+        );
+
+
+
+
+
+
     return newUser;
   }
 
@@ -169,52 +236,67 @@ class DB {
    * @param key
    * @param knowledge
    */
-  public addKnowledge(key: string, knowledge: string): void {
-    const existingKnowledge = DB.knowledge.get(key);
-    if (existingKnowledge) {
-      knowledge = existingKnowledge + "\n" + knowledge; // append new knowledge to existing knowledge
-    }
-    DB.knowledge.set(key, knowledge);
-  }
+  public addWiki(username: string,key: string, value: string): void {
 
+    const newWiki: Wiki = {
+      user: username,
+      key: key,
+      value: value
+    };
+    DB.wikis.push(newWiki);
+     
 
-  public getKnowledgeAll(key: string): string[] {
-    if (DB.knowledge.has(key)) {
-      // If there is an exact match for the key, return the associated knowledge
-      return [DB.knowledge.get(key)!];
-    } else {
-      // Otherwise, search for all keys that contain the given substring
-      const result: string[] = [];
-      for (const [k, v] of DB.knowledge.entries()) {
-        if (key.includes(k)) {
-          result.push(v);
-        }
+    //添加到服务器
+        // 声明 class
+    const Todo = AV.Object.extend("Wikis");
+    // 构建对象
+    const todo = new Todo();
+    // 为属性赋值
+    todo.set("user", username);
+    todo.set("key", key);
+    todo.set("value", value);
+    // 将对象保存到云端
+    todo.save().then(
+      (todo) => {
+        // 成功保存之后，执行其他逻辑
+        console.log(`保存成功。objectId：${todo.id}`);
+      },
+      (error) => {
+        // 异常处理
       }
-      return result;
-    }
+    );
   }
 
 
 
-  public getKnowledge(key: string) {
-    const knowledges = this.getKnowledgeAll(key);
-    if (knowledges.length > 1) {
-      const value = knowledges.map((k) => k.substring(k.indexOf(":") + 1).trim()).join("\n");
-      return value;
-    } else if (knowledges.length == 1) {
-      const value = knowledges[0].substring(knowledges[0].indexOf(":") + 1).trim(); // Extract the value from the knowledge string
-      return value;
-    } else { 
-      return '';
-    }
 
+
+
+  public getWikis(key: string): string {
+    const wikis = this.getWikisByKey(key);
+    const wikiStringArray = wikis.map(wiki => `[${wiki.key}]\n${wiki.value}\n[--以上内容由 @${wiki.user}  佬贡献]`);
+    return wikiStringArray.join('\n\n');
   }
-
-
   
 
-  public getKnowledgeMapSize(): number {
-    return DB.knowledge.size;
+  private getWikisByKey(key: string): Wiki[] {
+    return DB.wikis.filter(wiki => wiki.key === key);
+  }
+
+
+  public getAllWikisKeys(): string {
+    const wikis = DBUtils.getWikisByKey('');
+    const keys = wikis.map((wiki, index) => `${index+1}.${wiki.key}`);
+    return "目前已录入以下知识库\n\n"+keys.join('\n');
+  }
+  
+
+  public getWikisSizeForKey(key: string): number {
+    return this.getWikisByKey(key).length;
+  }
+
+  public getWikisSize(): number {
+    return DB.wikis.length;
   }
 
 
@@ -224,3 +306,8 @@ class DB {
 }
 const DBUtils = new DB();
 export default DBUtils;
+export interface Wiki {
+  user: string,
+  key: string,
+  value: string
+}

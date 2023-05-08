@@ -5,6 +5,10 @@ import { FileBox } from "file-box";
 import { chatgpt, dalle, whisper } from "./openai.js";
 import DBUtils from "./data.js";
 import { regexpEncode } from "./utils.js";
+
+
+
+
 enum MessageType {
   Unknown = 0,
   Attachment = 1, // Attach(6),
@@ -204,7 +208,7 @@ export class ChatGPTBot {
       // 语音(视频)消息
       text.includes("收到一条视频/语音聊天消息，请在手机上查看") ||
       // 红包消息
-      // text.includes("收到红包，请在手机上查看") ||
+      text.includes("收到红包，请在手机上查看") ||
       // Transfer message
       text.includes("收到转账，请在手机上查看") ||
       // 位置消息
@@ -221,18 +225,32 @@ export class ChatGPTBot {
     text: string,
     room?: RoomInterface
   ): boolean {
+
+   var resultMessage
     //文字信息
     if (messageType == MessageType.Text) {
-      if (text.includes("不是大佬")
-      || text.includes("谁是大佬 ")
-        || text.includes("学习 ")
-        || text==="常用命令"
-        || text.includes("收到红包，请在手机上查看")
-        || DBUtils.getKnowledgeAll(text).length > 0
-      ) {
-        this.doTask(talker, messageType, text, room)
-        return true;
-      }
+        
+
+      if (text.includes("不是大佬")||text.includes("我是垃圾")||text.includes("不是佬")) {
+
+        resultMessage = this.whoNotDaLao(talker,text)
+
+      }else  if (text.includes("谁是大佬")) {
+        resultMessage = this.whoIsDaLao()
+        
+      } else if (text.startsWith("学习 ")) { //有空格
+
+        resultMessage = this.study(talker,text);
+
+      } else if (DBUtils.getWikisSizeForKey(text) > 0) { //有空格
+      
+        resultMessage = this.getWiki(talker,text);
+        
+      } 
+
+
+
+
 
       
     }
@@ -245,9 +263,86 @@ export class ChatGPTBot {
 
     }
 
+    if(resultMessage != null&&resultMessage.length>0){
+        this.doTask(talker,messageType,text)
+        return true
+    }else{
+      return false;
+    }
 
-    return false;
   }
+
+
+
+
+  //谁是大佬
+  whoNotDaLao(talker: ContactInterface, 
+    text: string,
+    ): string {
+
+      var resultMessage = ""
+      const level = DBUtils.getLevel(talker.name());
+      var lao = "大佬";
+      if (level === null) {
+        // handle null level case
+        resultMessage = "";
+      } else if (level < 0) {
+        lao = "小赤佬"; 
+      } else if (level <= 10) {
+        lao = "大佬"; 
+      } else if (level <= 20) {
+        lao = "巨佬";
+      } else if (level <= 30) {
+        lao = "神佬";
+      } else {
+        lao = "传说之佬";
+      }
+      resultMessage = `经过您的历史发言分析：您当前段位为${lao}，佬的级别为：${level}级`;
+    
+    return resultMessage;
+
+  }
+
+  //谁是大佬
+  whoIsDaLao(): string {
+    var  resultMessage =`本群大佬有 ${DBUtils.getUsersStringWithLevelGreaterThanTenSortedByLevelDescending()}` ; 
+    return resultMessage;
+
+  }
+
+
+
+  //学习新知识
+  study(talker: ContactInterface, 
+    text: string):string{
+    const keyAndValue = text.substring(3);
+    const key = keyAndValue.substring(0, keyAndValue.indexOf(" "));
+    const value = keyAndValue.substring(key.length + 1);
+    
+    DBUtils.addWiki(talker.name(),key,value);
+
+    const uid = DBUtils.getWikisSize()+ 1
+    var  resultMessage = `感谢您提供的新知识，艾莎已记住啦,知识编号：${uid}`
+    return resultMessage
+  }
+
+
+
+
+  getWiki(talker: ContactInterface,
+    text: string,
+    ):string{
+
+    return DBUtils.getWikis(text);
+  }
+
+
+
+
+
+
+
+
 
   async doTask(talker: ContactInterface,
     messageType: MessageType,
@@ -255,52 +350,7 @@ export class ChatGPTBot {
     room?: RoomInterface) {
     var resultMessage = ""
 
-    if (text.includes("不是大佬")) {
-      const level = DBUtils.getLevel(talker.name());
-
-      if (level === null) {
-        // handle null level case
-        resultMessage = '';
-      } else if (level > 10) {
-        resultMessage = `经过您的历史发言分析：您就是大佬，大佬级别：${level}`;
-      } else {
-        resultMessage = `经过您的历史发言分析：您离成为群里大佬已经不远了！`;
-      }
-    }else  if (text.includes("谁是大佬")) {
       
-      resultMessage =`本群大佬有 ${DBUtils.getUsersStringWithLevelGreaterThanTenSortedByLevelDescending()}` ; 
-    } else if (text.startsWith("学习 ")) { //有空格
-      const keyAndValue = text.substring(3);
-      const key = keyAndValue.substring(0, keyAndValue.indexOf(" "));
-      const value = keyAndValue.substring(key.length + 1);
-      
-      DBUtils.addKnowledge(key,value);
-
-      const uid = DBUtils.getKnowledgeMapSize() + 1
-      resultMessage = `感谢您提供的新知识，艾莎已记住啦,知识编号：${uid}`
-    } else if (text === "常用命令") { //有空格 
-      resultMessage = `
-r.ScreenPercentage 200 提高渲染屏幕百分比 
-r.Tonemapper.Sharpen 1 锐化画面，使画面纹理变得清晰，从而提升画面质量 
-r.ForceLOD 0 将你搭建的植物模型精度强制LOD0 
-foliage.ForceLOD 0  将你绘制的植物模型精度强制LOD0 
-Raytracing.Geometry.InstancedstaticMeshes.Culing 0 解决绘制的植物阴影和远景处消失的问题 
-r.SetNearClipPlane 1 摄像机视图裁剪 
-r.DepthOfFieldQuality 4 景深质量 
-r.MotionBlurQuality 4 运动模糊质量 
-r.DOF.Kernel.MaxForegroundRadius 0.005 前景虚化半径 
-r.DOF.Kernel.MaxBackgroundRadius 0.005 背景虚化半径 
-r.DOF.Recombine.Quality 0 控制柔和程度
-[以上指令感谢@${'轩'} 提供]`
-    }else if (text.includes("收到红包，请在手机上查看")) { //有空格
-      
-      resultMessage = `@${"小陈"} @${"小陈"} @${"小陈"} 老大快出来抢红包啦！！！再晚点就被这群臭小子抢完了！！ `;
-    } else if (DBUtils.getKnowledgeAll(text).length > 0) { //有空格
-      
-      resultMessage = `${DBUtils.getKnowledge(text)}`;
-    } 
-
-
     if (!room) { //私聊
       if (resultMessage && resultMessage.length > 0) {
         this.trySay(talker, resultMessage);
@@ -316,6 +366,9 @@ r.DOF.Recombine.Quality 0 控制柔和程度
         }
       }
     }
+
+
+  
 
 
   }
