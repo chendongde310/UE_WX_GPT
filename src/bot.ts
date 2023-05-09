@@ -235,10 +235,10 @@ export class ChatGPTBot {
 
         resultMessage = this.whoNotDaLao(talker,text)
 
-      }else  if (text.includes("谁是大佬")) {
+      }else  if (text.includes("谁是大佬")||text.includes("本群大佬")) {
         resultMessage = this.whoIsDaLao()
         
-      } else if (text.startsWith("学习 ")) { //有空格
+      } else if (text.startsWith("学习 ")||text.startsWith("指令 ")) { //有空格
 
         resultMessage = this.study(talker,text);
 
@@ -264,7 +264,7 @@ export class ChatGPTBot {
     }
 
     if(resultMessage != null&&resultMessage.length>0){
-        this.doTask(talker,messageType,text)
+        this.doTask(talker,messageType,text,room,resultMessage)
         return true
     }else{
       return false;
@@ -305,7 +305,7 @@ export class ChatGPTBot {
 
   //谁是大佬
   whoIsDaLao(): string {
-    var  resultMessage =`本群大佬有 ${DBUtils.getUsersStringWithLevelGreaterThanTenSortedByLevelDescending()}` ; 
+    var  resultMessage =`本群排名前十的大佬有 ${DBUtils.getUsersStringWithLevelGreaterThanTenSortedByLevelDescending()}` ; 
     return resultMessage;
 
   }
@@ -347,10 +347,10 @@ export class ChatGPTBot {
   async doTask(talker: ContactInterface,
     messageType: MessageType,
     text: string,
-    room?: RoomInterface) {
-    var resultMessage = ""
+    room?: RoomInterface,
+    resultMessage?:string) { 
 
-      
+       
     if (!room) { //私聊
       if (resultMessage && resultMessage.length > 0) {
         this.trySay(talker, resultMessage);

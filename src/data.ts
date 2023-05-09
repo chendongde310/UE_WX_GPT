@@ -232,9 +232,12 @@ class DB {
   }
 
   public getUsersStringWithLevelGreaterThanTenSortedByLevelDescending(): string {
-    const users = DB.data.filter((user) => user.level > 10).sort((a, b) => b.level - a.level);
-    const names = users.map((user) => user.username);
-    return names.join(', ');
+    const users = DB.data.filter((user) => user.level > 10)
+      .sort((a, b) => b.level - a.level)
+      .slice(0, 10);
+    const usernames = users.map((user) => user.username);
+
+    return usernames.join(', ');
   }
 
 
