@@ -60,7 +60,6 @@ class DB {
       });
     });
 
-
   }
 
 
@@ -94,7 +93,7 @@ class DB {
     const todo = new Todo();
     // 为属性赋值
     todo.set("username", username);
-    todo.set("value", 0);
+    todo.set("level", 0);
     // 将对象保存到云端
     todo.save().then(
       (todo) => {
@@ -297,15 +296,17 @@ class DB {
   }
 
 
-  public getAllWikisKeys(): string {
-    const wikis = DBUtils.getWikisByKey('');
-    const keys = wikis.map((wiki, index) => `${index + 1}.${wiki.key}`);
-    return "目前已录入以下知识库\n\n" + keys.join('\n');
+  public getAllWikisKeys(): string { 
+    const keys = DB.wikis.map((wiki, index) => `${index + 1}.${wiki.key}`);
+    return "目前已录入以下知识库，可以直接输入标题返回内容\n\n" + keys.join('\n');
   }
 
 
   public getWikisSizeForKey(key: string): number {
-    return this.getWikisByKey(key).length;
+    if(key!=null&&key.length>0){
+      return this.getWikisByKey(key).length;
+    }
+    return 0;
   }
 
   public getWikisSize(): number {

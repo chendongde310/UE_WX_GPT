@@ -61,13 +61,13 @@ export class ChatGPTBot {
       description: "显示帮助信息",
       exec: async (talker) => {
         await this.trySay(talker, "========\n" +
-          "/cmd help\n" +
+          "艾莎 help\n" +
           "# 显示帮助信息\n" +
-          "/cmd prompt <PROMPT>\n" +
-          "# 设置当前会话的 prompt \n" +
-          "/img <PROMPT>\n" +
-          "# 根据 prompt 生成图片\n" +
-          "/cmd clear\n" +
+          "艾莎 重置\n" +
+          "# 清除自上次启动以来的所有会话\n" +
+          "学习 [指令] [内容]\n" +
+          "# 录入知识库（）\n" +
+          "/艾莎 重置\n" +
           "# 清除自上次启动以来的所有会话\n" +
           "========");
       }
@@ -84,7 +84,7 @@ export class ChatGPTBot {
       }
     },
     {
-      name: "clear",
+      name: "重置",
       description: "清除自上次启动以来的所有会话",
       exec: async (talker) => {
         if (talker instanceof RoomImpl) {
@@ -226,47 +226,57 @@ export class ChatGPTBot {
     room?: RoomInterface
   ): boolean {
 
-   var resultMessage
+    var resultMessage
     //文字信息
     if (messageType == MessageType.Text) {
-        
 
-      if (text.includes("不是大佬")||text.includes("我是垃圾")||text.includes("不是佬")) {
 
-        resultMessage = this.whoNotDaLao(talker,text)
+      if (text.includes("不是大佬") || text.includes("我是垃圾") || text.includes("不是佬")) {
 
-      }else  if (text.includes("谁是大佬")||text.includes("本群大佬")) {
+        resultMessage = this.whoNotDaLao(talker, text)
+
+      } else if (text.includes("谁是大佬") || text.includes("本群大佬")) {
         resultMessage = this.whoIsDaLao()
-        
-      } else if (text.startsWith("学习 ")||text.startsWith("指令 ")) { //有空格
 
-        resultMessage = this.study(talker,text);
-
-      } else if (DBUtils.getWikisSizeForKey(text) > 0) { //有空格
-      
-        resultMessage = this.getWiki(talker,text);
-        
-      } 
+      } else if (text.startsWith("学习 ")) { //有空格
 
 
 
+        resultMessage = this.study(talker, text);
+
+      } else if (text === "知识库") { 
+
+        resultMessage = DBUtils.getAllWikisKeys()
+
+      } else if (text.startsWith("翻译 ")) { 
+
+        resultMessage = DBUtils.getAllWikisKeys()
+
+      } else if (DBUtils.getWikisSizeForKey(text) > 0) {  
+
+        resultMessage = this.getWiki(talker, text);
+
+      }
 
 
-      
+
+
+
+
     }
     //图片信息
     if (messageType == MessageType.Image) {
-
+      
     }
     //语音信息
     if (messageType == MessageType.Audio) {
 
     }
 
-    if(resultMessage != null&&resultMessage.length>0){
-        this.doTask(talker,messageType,text,room,resultMessage)
-        return true
-    }else{
+    if (resultMessage != null && resultMessage.length > 0) {
+      this.doTask(talker, messageType, text, room, resultMessage)
+      return true
+    } else {
       return false;
     }
 
@@ -276,36 +286,36 @@ export class ChatGPTBot {
 
 
   //谁是大佬
-  whoNotDaLao(talker: ContactInterface, 
+  whoNotDaLao(talker: ContactInterface,
     text: string,
-    ): string {
+  ): string {
 
-      var resultMessage = ""
-      const level = DBUtils.getLevel(talker.name());
-      var lao = "大佬";
-      if (level === null) {
-        // handle null level case
-        resultMessage = "";
-      } else if (level < 0) {
-        lao = "小赤佬"; 
-      } else if (level <= 10) {
-        lao = "大佬"; 
-      } else if (level <= 20) {
-        lao = "巨佬";
-      } else if (level <= 30) {
-        lao = "神佬";
-      } else {
-        lao = "传说之佬";
-      }
-      resultMessage = `经过您的历史发言分析：您当前段位为${lao}，佬的级别为：${level}级`;
-    
+    var resultMessage = ""
+    const level = DBUtils.getLevel(talker.name());
+    var lao = "大佬";
+    if (level === null) {
+      // handle null level case
+      resultMessage = "";
+    } else if (level < 0) {
+      lao = "小赤佬";
+    } else if (level <= 10) {
+      lao = "大佬";
+    } else if (level <= 20) {
+      lao = "巨佬";
+    } else if (level <= 30) {
+      lao = "神佬";
+    } else {
+      lao = "传说之佬";
+    }
+    resultMessage = `经过您的历史发言分析：您当前段位为${lao}，佬的级别为：${level}级`;
+
     return resultMessage;
 
   }
 
   //谁是大佬
   whoIsDaLao(): string {
-    var  resultMessage =`本群排名前十的大佬有 ${DBUtils.getUsersStringWithLevelGreaterThanTenSortedByLevelDescending()}` ; 
+    var resultMessage = `本群排名前十的大佬有 ${DBUtils.getUsersStringWithLevelGreaterThanTenSortedByLevelDescending()}`;
     return resultMessage;
 
   }
@@ -313,16 +323,16 @@ export class ChatGPTBot {
 
 
   //学习新知识
-  study(talker: ContactInterface, 
-    text: string):string{
+  study(talker: ContactInterface,
+    text: string): string {
     const keyAndValue = text.substring(3);
     const key = keyAndValue.substring(0, keyAndValue.indexOf(" "));
     const value = keyAndValue.substring(key.length + 1);
-    
-    DBUtils.addWiki(talker.name(),key,value);
 
-    const uid = DBUtils.getWikisSize()+ 1
-    var  resultMessage = `感谢您提供的新知识，艾莎已记住啦,知识编号：${uid}`
+    DBUtils.addWiki(talker.name(), key, value);
+
+    const uid = DBUtils.getWikisSize() + 1
+    var resultMessage = `感谢您提供的新知识，艾莎已记住啦,知识编号：${uid}`
     return resultMessage
   }
 
@@ -331,7 +341,7 @@ export class ChatGPTBot {
 
   getWiki(talker: ContactInterface,
     text: string,
-    ):string{
+  ): string {
 
     return DBUtils.getWikis(text);
   }
@@ -348,9 +358,9 @@ export class ChatGPTBot {
     messageType: MessageType,
     text: string,
     room?: RoomInterface,
-    resultMessage?:string) { 
+    resultMessage?: string) {
 
-       
+
     if (!room) { //私聊
       if (resultMessage && resultMessage.length > 0) {
         this.trySay(talker, resultMessage);
@@ -368,7 +378,7 @@ export class ChatGPTBot {
     }
 
 
-  
+
 
 
   }
@@ -384,8 +394,9 @@ export class ChatGPTBot {
     text: string,
     room: RoomInterface
   ) {
-    const gptMessage = await this.getGPTMessage(await room.topic(), text);
-    const result = `@${talker.name()} ${text}\n\n------\n ${gptMessage}`;
+    // const gptMessage = await this.getGPTMessage(await room.topic(), text);
+    const gptMessage = await this.getGPTMessage(talker.name(), text);
+    const result = `@${talker.name()}\n------\n ${gptMessage}`;
     await this.trySay(room, result);
   }
   async onMessage(message: Message) {
@@ -419,9 +430,9 @@ export class ChatGPTBot {
     //   })
     //   return;
     // }
-    if (rawText.startsWith("/cmd ")) {
+    if (rawText.startsWith("艾莎 ")) {
       console.log(`🤖 Command: ${rawText}`)
-      const cmdContent = rawText.slice(5) // 「/cmd 」一共5个字符(注意空格)
+      const cmdContent = rawText.slice(3) //  
       if (privateChat) {
         await this.command(talker, cmdContent);
       } else {
