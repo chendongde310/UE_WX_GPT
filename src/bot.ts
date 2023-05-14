@@ -441,9 +441,9 @@ export class ChatGPTBot {
       return;
     }
     //拦截关键词任务
-    if (this.isTaskKey(talker, messageType, rawText, room)) {
-      return;
-    }
+    // if (this.isTaskKey(talker, messageType, rawText, room)) {
+    //   return;
+    // }
 
     // 使用DallE生成图片
     if (rawText.startsWith("/img")) {

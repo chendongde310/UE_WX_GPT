@@ -197,7 +197,9 @@ class DB {
       user.chatMessage = [
         {
           role: ChatCompletionRequestMessageRoleEnum.System,
-          content: "ChatGPT你叫艾莎,是最优秀的UE5小助手,可以根据[https://docs.unrealengine.com/5.1/zh-CN/]官方文档回答我相关问题！"
+          // content: "ChatGPT你叫艾莎,是最优秀的UE5小助手,可以根据[https://docs.unrealengine.com/5.1/zh-CN/]官方文档回答我相关问题！"
+
+           content: "ChatGPT你叫艾莎,是最一只可爱的智能狗狗"
         }
       ];
     }
